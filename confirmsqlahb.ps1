@@ -23,7 +23,7 @@ try {
 }
 #>
 # Import the list of subscriptions from sublist.txt
-$subscriptions = Import-Csv -Path "sublist.txt" -Delimiter ',' -Header "SubscriptionName", "SubscriptionId" | Select-Object -Skip 1
+$subscriptions = Import-Csv -Path "sublist.txt" -Delimiter ',' -Header "SubscriptionName", "SubscriptionId", "TenantId" | Select-Object -Skip 1
 
 # Initialize the output files
 $outputFile = "findallsqlsvr.txt"
@@ -103,6 +103,7 @@ foreach ($subscription in $subscriptions) {
     Write-Output "$(Get-Date -Format HH:mm:ss) Processing subscriptions: $($subscription.SubscriptionName)"
     $SubscriptionId = $subscription.SubscriptionId
     $SubscriptionName = $subscription.SubscriptionName
+    $TenantId = $subscription.TenantId
 
     # Check if SubscriptionId or SubscriptionName is empty
     if ([string]::IsNullOrEmpty($SubscriptionId) -or [string]::IsNullOrEmpty($SubscriptionName)) {
@@ -115,7 +116,7 @@ foreach ($subscription in $subscriptions) {
         Write-Output "Setting context for Subscription: $SubscriptionName ($SubscriptionId)"
 
         # Set the current subscription context
-        Select-AzSubscription -SubscriptionName $SubscriptionName -ErrorAction Stop
+        Set-AzContext -TenantId $TenantId -SubscriptionName $SubscriptionName -ErrorAction Stop
 
         # Discover SQL Instance Pools
         Write-Output "$(Get-Date -Format HH:mm:ss) Processing Get-AzSqlInstancePool"
