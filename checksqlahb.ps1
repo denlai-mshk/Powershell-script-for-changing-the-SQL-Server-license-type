@@ -243,14 +243,32 @@ foreach ($subscription in $subscriptions) {
             $sqlVmProperties = $sqlVm.Properties
             $licenseType = $sqlVmProperties.sqlServerLicenseType
             $sqlImageSku = $sqlVmProperties.sqlImageSku
-
+            $sqlImageOffer = $sqlVmProperties.sqlImageOffer
+            $virtualMachineResourceId = $sqlVmProperties.virtualMachineResourceId
             if ($sqlImageSku -ne "Developer") {
-                $vCores = "N/A" # vCores might not be directly available
+
+            
+                # Fetch VM properties using PowerShell
+                $vmProperties = Get-AzResource -ResourceId $virtualMachineResourceId
+
+                # Get the hardwareProfile
+                $hardwareProfile = $vmProperties.Properties.HardwareProfile
+
+                # Get the vmSize
+                $vCores = $hardwareProfile.VmSize
+                # Extract the second digit from the VM size string
+                if ($vCores -match "Standard_([A-Z])(\d+)") {
+                    $vCores = [int]$matches[2]
+                }
+
+                $CreateDate = $vmProperties.Properties.timeCreated            
+                $remark = $sqlImageOffer + " " + $CreateDate
+
                 $storageInGB = "N/A" # Storage details can be complex to extract
-                Log-Discovery -SqlType "sqlvm" -LicenseType $licenseType -vCores $vCores -StorageinGB $storageInGB -SubscriptionName $SubscriptionName -Region $sqlVm.Location -ResourceGroup $sqlVm.ResourceGroupName -SqlName $sqlVm.Name -ResourceId $sqlVm.Id
+                Log-Discovery -SqlType "sqlvm" -LicenseType $licenseType -vCores $vCores -StorageinGB $storageInGB -SubscriptionName $SubscriptionName -Region $sqlVm.Location -ResourceGroup $sqlVm.ResourceGroupName -SqlName $sqlVm.Name -ResourceId $remark
 
                 if ($LicenseType -eq "AHUB") {
-                    Log-AHBOnly -SqlType "sqlvm" -LicenseType $licenseType -vCores $vCores -StorageinGB $storageInGB -SubscriptionName $SubscriptionName -Region $sqlVm.Location -ResourceGroup $sqlVm.ResourceGroupName -SqlName $sqlVm.Name -ResourceId $sqlVm.Id
+                    Log-AHBOnly -SqlType "sqlvm" -LicenseType $licenseType -vCores $vCores -StorageinGB $storageInGB -SubscriptionName $SubscriptionName -Region $sqlVm.Location -ResourceGroup $sqlVm.ResourceGroupName -SqlName $sqlVm.Name -ResourceId $remark
                 }
             }
         }
